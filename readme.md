@@ -1,4 +1,5 @@
-#Online Chat
+Online Chat
+======
 ___
 This is my first online chat.
 For convenience, the project is divided into modules:
