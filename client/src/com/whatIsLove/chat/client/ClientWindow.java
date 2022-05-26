@@ -15,6 +15,7 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
     private static final int WIDTH = 600;
     private static final int HEIGHT = 400;
 
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -25,8 +26,9 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
     }
 
     private final JTextArea area = new JTextArea();
-    private final JTextField fieldNickName = new JTextField("unknownUser");
     private final JTextField fieldInput = new JTextField();
+    private static String name;
+
 
     private TCPConnection connection;
 
@@ -34,15 +36,22 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(WIDTH, HEIGHT);
         setLocationRelativeTo(null);
-        setAlwaysOnTop(true);
+        setAlwaysOnTop(false);
         area.setEditable(false);
         area.setLineWrap(true);
-
+        area.setBackground(new Color(55, 86, 115));
+        area.setForeground(new Color(217, 235, 252));
+        area.setFont(new Font(Font.DIALOG, Font.ITALIC, 15));
+        fieldInput.setBackground(new Color(16, 52, 87));
+        fieldInput.setPreferredSize(new Dimension(600, 30));
+        fieldInput.setForeground(new Color(217, 235, 252));
         fieldInput.addActionListener(this);
         add(area, BorderLayout.CENTER);
         add(fieldInput, BorderLayout.SOUTH);
-        add(fieldNickName, BorderLayout.NORTH);
         setVisible(true);
+
+        NameWindow nameWindow = new NameWindow();
+        nameWindow.start();
 
         try {
             connection = new TCPConnection(this, ipAddress, port);
@@ -56,7 +65,7 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
         String msg = fieldInput.getText();
         if (msg.equals("")) return;
         fieldInput.setText(null);
-        connection.sendString(fieldNickName.getText() + ": " + msg);
+        connection.sendString(name + ": " + msg);
     }
 
     @Override
@@ -66,7 +75,15 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
 
     @Override
     public void onReceiveString(TCPConnection tcpConnection, String message) {
-        printMsg(message);
+        int pos = message.lastIndexOf('-');
+        String isMine = "";
+        if (pos != -1) isMine = message.substring(pos);
+        if (isMine.equals("-mine")){
+            message = message.substring(0, message.lastIndexOf('-'));
+            printMyMsg(message);
+        }
+        else
+            printMsg(message);
     }
 
     @Override
@@ -79,7 +96,7 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
         System.out.println("Connection exception: " + ex);
     }
 
-    private synchronized void printMsg(String msg){
+    private synchronized void printMsg(String msg) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -89,5 +106,39 @@ public class ClientWindow extends JFrame implements ActionListener, TCPConnectio
         });
     }
 
+    private synchronized void printMyMsg(String msg){
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
 
+                area.append(msg + "\n");
+                area.setCaretPosition(area.getDocument().getLength());
+            }
+        });
+    }
+
+    class NameWindow extends JFrame {
+
+        public void start() {
+            setSize(300, 100);
+            setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+            setLocationRelativeTo(null);
+            setResizable(false);
+            setAlwaysOnTop(true);
+
+            JTextField textField = new JTextField("Unknown user");
+
+            JButton button = new JButton("Start chatting!");
+            button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    name = textField.getText();
+                    dispose();
+                }
+            });
+            add(textField, BorderLayout.CENTER);
+            add(button, BorderLayout.SOUTH);
+            setVisible(true);
+        }
+    }
 }
